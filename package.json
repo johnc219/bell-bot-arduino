@@ -1,0 +1,16 @@
+{
+  "name": "bell-bot-arduino",
+  "version": "1.0.0",
+  "description": "Ring a bell over the internet",
+  "main": "app.js",
+  "dependencies": {
+    "express": "^4.13.4",
+    "serialport": "^2.0.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "John Careaga",
+  "license": "MIT"
+}
