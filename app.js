@@ -33,7 +33,7 @@ var serialPort = new SerialPort(USB_PORT, {
 })
 
 // express route to ring bell
-app.get('/ring', function(req, res) {
+app.post('/ring', function(req, res) {
   console.log("incoming bell!")
   bellCount++
   
