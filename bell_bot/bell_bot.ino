@@ -4,7 +4,8 @@ Servo myServo;
 byte servoPin = 8;
 byte centerAngle = 90;
 byte maxAngle = 180;
-byte successCode = 200;
+byte successCode = 'S';
+byte failCode = 'F'
 char input;
 
 void setup() {
@@ -20,8 +21,11 @@ void loop() {
     if (input == 'R') {
       myServo.write(maxAngle);
       Serial.write(successCode);
-      delay(3000);
+      delay(1000);
       myServo.write(centerAngle);
+    }
+    else {
+      Serial.write(failCode)
     }
   }
 }
