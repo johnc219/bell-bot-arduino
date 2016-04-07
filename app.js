@@ -34,7 +34,7 @@ app.post('/ring', function(req, res) {
   bellCount++
   
   // callback when data is received
-  serialPort.on('data', function(data) {
+  serialPort.once('data', function(data) {
     if (data.toString() === SUCCESS_CODE) {
       console.log("Bell rung!")
     }
@@ -56,7 +56,7 @@ app.post('/ring', function(req, res) {
 })
 
 // callback when serial port is opened
-serialPort.on('open', function() {
+serialPort.once('open', function() {
   console.log("serial port opened on port: " + USB_PORT)
   
   // start a localtunnel
