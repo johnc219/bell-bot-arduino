@@ -1,8 +1,7 @@
 // required modules
 var serialport = require('serialport')
 var express = require('express')
-var localtunnel = require('localtunnel')
-
+var ngrok = require('ngrok')
 // set protocol
 var SUCCESS_CODE = 'S'
 var RING_CODE = 'R'
@@ -10,15 +9,12 @@ var RING_CODE = 'R'
 // defaults
 var USB_PORT = "/dev/cu.usbmodemfa131"
 var PORT = 3000
-var TUNNEL_OPTS = { subdomain: "mybellbot" }
 
-// override defaults, e.g. `node app.js --subdomain=mysubdomain --port=3001`
+// override defaults, e.g. `node app.js --port=3001`
 process.argv.forEach(function(val, index, array) {
   var arg = val.split('=')
   if (arg[0] === '--port')
     PORT = arg[1]
-  if (arg[0] === '--subdomain')
-    TUNNEL_OPTS.subdomain = arg[1]
   if (arg[0] === '--usb')
     USB_PORT = arg[1]
 })
@@ -64,10 +60,13 @@ serialPort.on('open', function() {
   console.log("serial port opened on port: " + USB_PORT)
   
   // start a localtunnel
-  var tunnel = localtunnel(PORT, TUNNEL_OPTS, function(err, tunnel) {
+  ngrok.connect({
+    proto: 'http',
+    addr: PORT
+  }, function(err, url) {
     if (err)
       throw err
-    console.log("public URL live at: " + tunnel.url)
+    console.log("public URL live at: " + url)
     
     // listen for requests
     app.listen(PORT)
