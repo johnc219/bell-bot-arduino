@@ -1,75 +1,110 @@
-// required modules
-var serialport = require('serialport')
-var express = require('express')
-var ngrok = require('ngrok')
-// set protocol
-var SUCCESS_CODE = 'S'
-var RING_CODE = 'R'
+var five = require("johnny-five");
+var express = require('express');
+var ngrok = require('ngrok');
 
-// defaults
-var USB_PORT = "/dev/cu.usbmodemfa131"
-var PORT = 3000
-
-// override defaults, e.g. `node app.js --port=3001`
-process.argv.forEach(function(val, index, array) {
-  var arg = val.split('=')
-  if (arg[0] === '--port')
-    PORT = arg[1]
-  if (arg[0] === '--usb')
-    USB_PORT = arg[1]
-})
-
+var board = new five.Board();
 var app = express();
-var SerialPort = serialport.SerialPort
-var bellCount = 0
+var queue = [];
 
-// open the specified port immediately
-var serialPort = new SerialPort(USB_PORT, {
-  baudrate: 9600
-})
+ngrok.settings = {
+  proto: "http",
+  addr: 3001
+};
+
+setInterval(function() {
+  if (queue.length > 0) {
+    var f = queue.shift();
+    f();
+  }
+}, 3000);
 
 // express route to ring bell
-app.post('/ring', function(req, res) {
-  console.log("incoming bell!")
-  bellCount++
-  
-  // callback when data is received
-  serialPort.once('data', function(data) {
-    if (data.toString() === SUCCESS_CODE) {
-      console.log("Bell rung!")
-    }
-    else {
-      console.log("fail")
-    }
-  }) 
-
-  // write to arduino
-  serialPort.write(RING_CODE, function(err, results) {
-    if (err)
-      console.log('write error: ' + err)
-    else
-      console.log('write success: ' + results)
-  })
-
+app.get('/ring', function(req, res) {
+  var ring = function() {
+    console.log("BAM");
+  };
+  queue.push(ring);
   // return 200 ok
-  res.send("Ding! Bell count: " + bellCount)
-})
+  res.send("Ding!");
+});
 
-// callback when serial port is opened
-serialPort.once('open', function() {
-  console.log("serial port opened on port: " + USB_PORT)
-  
-  // start a localtunnel
+board.on("ready", function() {
+  this.servo = new five.Servo({
+    id: "BellbotServo",
+    pin: 8,
+    startAt: 85
+  });
+
   ngrok.connect({
-    proto: 'http',
-    addr: PORT
+
   }, function(err, url) {
     if (err)
-      throw err
-    console.log("public URL live at: " + url)
-    
-    // listen for requests
-    app.listen(PORT)
-    console.log('Listening on port: ' + PORT)
-  })
-})
+      throw err;
+    console.log("url: " + url);
+    ngrok.url = url;
+    app.listen(ngrok.settings.addr);
+    console.log("listening on port: " + ngrok.settings.addr);
+  });
+
+
+  // Servo alternate constructor with options
+  /*
+  var servo = new five.Servo({
+    id: "MyServo",     // User defined id
+    pin: 10,           // Which pin is it attached to?
+    type: "standard",  // Default: "standard". Use "continuous" for continuous rotation servos
+    range: [0,180],    // Default: 0-180
+    fps: 100,          // Used to calculate rate of movement between positions
+    invert: false,     // Invert all specified positions
+    startAt: 90,       // Immediately move to a degree
+    center: true,      // overrides startAt if true and moves the servo to the center of the range
+    specs: {           // Is it running at 5V or 3.3V?
+      speed: five.Servo.Continuous.speeds["@5.0V"]
+    }
+  });
+  */
+
+  Add servo to REPL (optional)
+  this.repl.inject({
+    ngrok: ngrok,
+    queue: queue,
+    app: app
+  });
+
+
+  // Servo API
+
+  // min()
+  //
+  // set the servo to the minimum degrees
+  // defaults to 0
+  //
+  // eg. servo.min();
+
+  // max()
+  //
+  // set the servo to the maximum degrees
+  // defaults to 180
+  //
+  // eg. servo.max();
+
+  // center()
+  //
+  // centers the servo to 90°
+  //
+  // servo.center();
+
+  // to( deg )
+  //
+  // Moves the servo to position by degrees
+  //
+  // servo.to( 90 );
+
+  // step( deg )
+  //
+  // step all servos by deg
+  //
+  // eg. array.step( -20 );
+
+  // servo.sweep();
+});

@@ -5,8 +5,8 @@
   "main": "app.js",
   "dependencies": {
     "express": "^4.13.4",
-    "ngrok": "^2.1.7",
-    "serialport": "^2.0.6"
+    "johnny-five": "^0.9.46",
+    "ngrok": "^2.1.7"
   },
   "devDependencies": {},
   "scripts": {
