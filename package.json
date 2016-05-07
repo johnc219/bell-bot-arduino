@@ -4,6 +4,7 @@
   "description": "Ring a bell over the internet",
   "main": "app.js",
   "dependencies": {
+    "body-parser": "^1.15.1",
     "express": "^4.13.4",
     "johnny-five": "^0.9.46",
     "ngrok": "^2.1.8"

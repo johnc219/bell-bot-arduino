@@ -1,24 +1,23 @@
 var five = require('johnny-five');
 var express = require('express');
+var bodyParser = require('body-parser');
 var ngrok = require('ngrok');
-var commandArgs = require('./args').commandArgs;
+var args = require('./args');
+var ServoController = require('./servo_controller').ServoController;
 
 var board = new five.Board();
 var app = express();
-var clArgs = commandArgs();
-
 var BELLBOT = {
-  proto:               clArgs.proto         || 'http',
-  addr:         Number(clArgs.port)         || 3001,
+  proto: args.proto || 'http',
+  addr: Number(args.port) || 3000,
   url: '',
-  startAt:      Number(clArgs.start)        || 70,
-  strikeAt:     Number(clArgs.strike)       || 95,
-  servoPin:     Number(clArgs.pin)          || 8,
-  servoDelay:   Number(clArgs.servodelay)   || 1000,
-  processDelay: Number(clArgs.processdelay) || 3000
+  startAt: Number(args.start) || 70,
+  strikeAt: Number(args.strike) || 95,
+  servoPin: Number(args.pin) || 8,
+  servoDelay: Number(args.sdelay) || 1000,
+  processDelay: Number(args.pdelay) || 3000,
+  key: args.key || null
 };
-exports.BELLBOT = BELLBOT;
-var ServoController = require('./servo-controller').ServoController;
 
 five.Servo.prototype.ring = function(opts) {
   var strike = opts && opts.strike || BELLBOT.strikeAt;
@@ -32,15 +31,21 @@ five.Servo.prototype.ring = function(opts) {
   }, delay);
 };
 
-// express route to ring bell
-app.get('/ring', function(req, res) {
-  var ring_cmd = {
+app.use(bodyParser.json());
+app.post('/ring', function(req, res) {
+  var key = req.body.key;
+  if (BELLBOT.key && key !== BELLBOT.key) {
+    res.send('request denied');
+    return;
+  }
+
+  var ringCmd = {
     obj: board.servo,
     method: 'ring',
     args: null
   }
   
-  board.servoController.exec(ring_cmd, function() {
+  board.servoController.exec(ringCmd, function() {
     console.log('bell rung');
   });
   res.send('request received');
@@ -53,24 +58,26 @@ board.on('ready', function() {
     pin: BELLBOT.servoPin,
     startAt: BELLBOT.startAt,
   });
-  this.servoController = new ServoController();
+  
+  this.servoController = new ServoController(BELLBOT.processDelay);
+  
   ngrok.connect({
     proto: BELLBOT.proto,
     addr: BELLBOT.addr
   }, function(err, url) {
     if (err)
       throw err;
-    
-    console.log('ngrok url: ' + url);
+
     BELLBOT.url = url;
+    console.log('ngrok url: ' + url);
     app.listen(BELLBOT.addr);
     console.log('express listening on port: ' + BELLBOT.addr);
   });
 
   this.on('exit', function() {
-    console.log('shutting down board');
     ngrok.disconnect();
-    ngrok.kill();
     console.log('ngrok disconnected');
+    ngrok.kill();
+    console.log('ngrok process killed');
   });
 });

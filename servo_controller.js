@@ -1,7 +1,5 @@
-var BELLBOT = require('./app').BELLBOT;
-
 var ServoController = function(timeout) {
-  this.timeout = timeout || BELLBOT.processDelay;
+  this.timeout = timeout;
   this.queue = [];
   this.ready = true;
 };
@@ -27,4 +25,4 @@ ServoController.prototype.process = function() {
   }, this.timeout);
 };
 
-exports.ServoController = ServoController;
+module.exports.ServoController = ServoController;
