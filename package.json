@@ -6,7 +6,7 @@
   "dependencies": {
     "express": "^4.13.4",
     "johnny-five": "^0.9.46",
-    "ngrok": "^2.1.7"
+    "ngrok": "^2.1.8"
   },
   "devDependencies": {},
   "scripts": {

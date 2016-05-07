@@ -1,110 +1,76 @@
-var five = require("johnny-five");
+var five = require('johnny-five');
 var express = require('express');
 var ngrok = require('ngrok');
+var commandArgs = require('./args').commandArgs;
 
 var board = new five.Board();
 var app = express();
-var queue = [];
+var clArgs = commandArgs();
 
-ngrok.settings = {
-  proto: "http",
-  addr: 3001
+var BELLBOT = {
+  proto:               clArgs.proto         || 'http',
+  addr:         Number(clArgs.port)         || 3001,
+  url: '',
+  startAt:      Number(clArgs.start)        || 70,
+  strikeAt:     Number(clArgs.strike)       || 95,
+  servoPin:     Number(clArgs.pin)          || 8,
+  servoDelay:   Number(clArgs.servodelay)   || 1000,
+  processDelay: Number(clArgs.processdelay) || 3000
 };
+exports.BELLBOT = BELLBOT;
+var ServoController = require('./servo-controller').ServoController;
 
-setInterval(function() {
-  if (queue.length > 0) {
-    var f = queue.shift();
-    f();
-  }
-}, 3000);
+five.Servo.prototype.ring = function(opts) {
+  var strike = opts && opts.strike || BELLBOT.strikeAt;
+  var reset  = opts && opts.reset  || BELLBOT.startAt;
+  var delay  = opts && opts.delay  || BELLBOT.servoDelay;
+
+  this.to(strike);
+  that = this;
+  setTimeout(function() {
+    that.to(reset);
+  }, delay);
+};
 
 // express route to ring bell
 app.get('/ring', function(req, res) {
-  var ring = function() {
-    console.log("BAM");
-  };
-  queue.push(ring);
-  // return 200 ok
-  res.send("Ding!");
+  var ring_cmd = {
+    obj: board.servo,
+    method: 'ring',
+    args: null
+  }
+  
+  board.servoController.exec(ring_cmd, function() {
+    console.log('bell rung');
+  });
+  res.send('request received');
 });
 
-board.on("ready", function() {
+board.on('ready', function() {
+  
   this.servo = new five.Servo({
-    id: "BellbotServo",
-    pin: 8,
-    startAt: 85
+    id: 'BellbotServo',
+    pin: BELLBOT.servoPin,
+    startAt: BELLBOT.startAt,
   });
-
+  this.servoController = new ServoController();
   ngrok.connect({
-
+    proto: BELLBOT.proto,
+    addr: BELLBOT.addr
   }, function(err, url) {
     if (err)
       throw err;
-    console.log("url: " + url);
-    ngrok.url = url;
-    app.listen(ngrok.settings.addr);
-    console.log("listening on port: " + ngrok.settings.addr);
+    
+    console.log('ngrok url: ' + url);
+    BELLBOT.url = url;
+    app.listen(BELLBOT.addr);
+    console.log('express listening on port: ' + BELLBOT.addr);
   });
 
-
-  // Servo alternate constructor with options
-  /*
-  var servo = new five.Servo({
-    id: "MyServo",     // User defined id
-    pin: 10,           // Which pin is it attached to?
-    type: "standard",  // Default: "standard". Use "continuous" for continuous rotation servos
-    range: [0,180],    // Default: 0-180
-    fps: 100,          // Used to calculate rate of movement between positions
-    invert: false,     // Invert all specified positions
-    startAt: 90,       // Immediately move to a degree
-    center: true,      // overrides startAt if true and moves the servo to the center of the range
-    specs: {           // Is it running at 5V or 3.3V?
-      speed: five.Servo.Continuous.speeds["@5.0V"]
-    }
+  this.on('exit', function() {
+    console.log('shutting down board');
+    ngrok.disconnect();
+    ngrok.kill();
+    console.log('ngrok disconnected');
   });
-  */
-
-  Add servo to REPL (optional)
-  this.repl.inject({
-    ngrok: ngrok,
-    queue: queue,
-    app: app
-  });
-
-
-  // Servo API
-
-  // min()
-  //
-  // set the servo to the minimum degrees
-  // defaults to 0
-  //
-  // eg. servo.min();
-
-  // max()
-  //
-  // set the servo to the maximum degrees
-  // defaults to 180
-  //
-  // eg. servo.max();
-
-  // center()
-  //
-  // centers the servo to 90°
-  //
-  // servo.center();
-
-  // to( deg )
-  //
-  // Moves the servo to position by degrees
-  //
-  // servo.to( 90 );
-
-  // step( deg )
-  //
-  // step all servos by deg
-  //
-  // eg. array.step( -20 );
-
-  // servo.sweep();
 });
