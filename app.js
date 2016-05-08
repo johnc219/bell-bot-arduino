@@ -2,27 +2,16 @@ var five = require('johnny-five');
 var express = require('express');
 var bodyParser = require('body-parser');
 var ngrok = require('ngrok');
-var args = require('./args');
 var ServoController = require('./servo_controller').ServoController;
+var BELLBOT = require('./config');
 
 var board = new five.Board();
 var app = express();
-var BELLBOT = {
-  proto: args.proto || 'http',
-  addr: Number(args.port) || 3000,
-  url: '',
-  startAt: Number(args.start) || 70,
-  strikeAt: Number(args.strike) || 95,
-  servoPin: Number(args.pin) || 8,
-  servoDelay: Number(args.sdelay) || 500,
-  processDelay: Number(args.pdelay) || 1000,
-  key: args.key || null
-};
 
 five.Servo.prototype.ring = function(opts) {
-  var strike = opts && Number(opts.strike) || BELLBOT.strikeAt;
-  var reset  = opts && Number(opts.reset)  || BELLBOT.startAt;
-  var delay  = opts && Number(opts.delay)  || BELLBOT.servoDelay;
+  var strike = BELLBOT.strikeAt;
+  var reset  = BELLBOT.startAt;
+  var delay  = BELLBOT.servoDelay;
 
   this.to(strike);
   that = this;
@@ -34,23 +23,20 @@ five.Servo.prototype.ring = function(opts) {
 app.use(bodyParser.json());
 app.post('/ring', function(req, res) {
   console.log("request received");
-  
-  var body = req.body;
-  if (BELLBOT.key && body.key !== BELLBOT.key) {
-    res.send('request denied');
+  var key = req.body && req.body.key;
+  if (BELLBOT.key && BELLBOT.key !== key) {
+    res.sendStatus(401);
     return;
   }
-
   var ringCmd = {
     obj: board.servo,
     method: 'ring',
-    args: body
+    args: null
   }
-  
   board.servoController.exec(ringCmd, function() {
     console.log('bell physically rung');
   });
-  res.send('request received');
+  res.sendStatus(200);
 });
 
 board.on('ready', function() {
