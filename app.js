@@ -14,15 +14,15 @@ var BELLBOT = {
   startAt: Number(args.start) || 70,
   strikeAt: Number(args.strike) || 95,
   servoPin: Number(args.pin) || 8,
-  servoDelay: Number(args.sdelay) || 1000,
-  processDelay: Number(args.pdelay) || 3000,
+  servoDelay: Number(args.sdelay) || 500,
+  processDelay: Number(args.pdelay) || 1000,
   key: args.key || null
 };
 
 five.Servo.prototype.ring = function(opts) {
-  var strike = opts && opts.strike || BELLBOT.strikeAt;
-  var reset  = opts && opts.reset  || BELLBOT.startAt;
-  var delay  = opts && opts.delay  || BELLBOT.servoDelay;
+  var strike = opts && Number(opts.strike) || BELLBOT.strikeAt;
+  var reset  = opts && Number(opts.reset)  || BELLBOT.startAt;
+  var delay  = opts && Number(opts.delay)  || BELLBOT.servoDelay;
 
   this.to(strike);
   that = this;
@@ -33,8 +33,10 @@ five.Servo.prototype.ring = function(opts) {
 
 app.use(bodyParser.json());
 app.post('/ring', function(req, res) {
-  var key = req.body.key;
-  if (BELLBOT.key && key !== BELLBOT.key) {
+  console.log("request received");
+  
+  var body = req.body;
+  if (BELLBOT.key && body.key !== BELLBOT.key) {
     res.send('request denied');
     return;
   }
@@ -42,11 +44,11 @@ app.post('/ring', function(req, res) {
   var ringCmd = {
     obj: board.servo,
     method: 'ring',
-    args: null
+    args: body
   }
   
   board.servoController.exec(ringCmd, function() {
-    console.log('bell rung');
+    console.log('bell physically rung');
   });
   res.send('request received');
 });
