@@ -1,9 +1,13 @@
+// when invoked, returns an object representing supplied command line args
 var parse = function() {
+
+  // the format of valid args
   var flag     = /^-[a-z]$/i;
   var longFlag = /^--[a-z]+$/i;
   var option   = /^--[a-z]+=([a-z]+|[0-9]+)$/i
-  var argsObject = {};
 
+  // build up the argsObject with supplied args
+  var argsObject = {};
   process.argv.slice(2).forEach(function(arg) {
     if (flag.test(arg)) {
       argsObject[arg.slice(1)] = true;
@@ -16,10 +20,13 @@ var parse = function() {
       argsObject[optParams[0]] = optParams[1];
     }
   });
+
+  // set the auth key if not supplied in command line
   var key = process.env.BELLBOT_KEY;
   if (key && !argsObject.key) {
     argsObject.key = key;
   }
+
   return argsObject;
 };
 

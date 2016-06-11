@@ -1,4 +1,7 @@
+// get supplied command line args
 var args = require('./args');
+
+// the BellBot config
 var config = {
   proto: args.proto || 'http',
   addr: Number(args.port) || 3000,
